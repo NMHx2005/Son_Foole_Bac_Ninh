@@ -1,0 +1,10 @@
+.next
+node_modules
+out
+build
+coverage
+*.log
+.env
+.env*.local
+storage/*.sqlite
+storage/*.sqlite-*
