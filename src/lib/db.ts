@@ -58,12 +58,29 @@ export type ImportIssue = {
 const dbPath = process.env.DATABASE_PATH
   ? path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.DATABASE_PATH)
   : path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "prices.sqlite");
+const isReadOnlyRuntime = process.env.VERCEL === "1" || process.env.DB_READONLY === "1";
 
 declare global {
   var __fooleDb: Database.Database | undefined;
 }
 
 function openDatabase() {
+  if (isReadOnlyRuntime) {
+    if (!fs.existsSync(dbPath)) {
+      console.warn(`SQLite database was not found at ${dbPath}. Search will return empty data.`);
+      const db = new Database(":memory:");
+      migrate(db);
+      return db;
+    }
+
+    const db = new Database(dbPath, {
+      readonly: true,
+      fileMustExist: true,
+    });
+    db.pragma("query_only = ON");
+    return db;
+  }
+
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
   const db = new Database(dbPath);
