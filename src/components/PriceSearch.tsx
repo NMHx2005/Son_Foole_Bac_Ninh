@@ -19,7 +19,7 @@ const categories: Array<{ id: CategoryId; label: string; icon: typeof Search }> 
   { id: "warranty", label: "Bảo hành", icon: ShieldCheck },
 ];
 
-const quickSearches = ["iPhone 15", "Samsung S24", "iPhone 14", "OPPO Reno", "Redmi Note"];
+const quickSearches = ["Iphone", "SAM OLED", "SAM INCELL", "OP", "VO", "Redmi", "khác"];
 
 const categoryLabels: Record<string, string> = {
   screen: "Màn hình",
