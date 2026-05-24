@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchParts } from "@/lib/parts";
+import { searchPublicParts } from "@/lib/publicSearch";
 import type { PartCategory } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -13,6 +13,6 @@ export async function GET(request: Request) {
   const category = categories.has(categoryParam) ? (categoryParam as PartCategory | "all") : "all";
 
   return NextResponse.json({
-    results: searchParts({ query, category, limit: 120 }),
+    results: searchPublicParts({ query, category, limit: 120 }),
   });
 }
