@@ -59,9 +59,9 @@ export function AdminPriceTable({ parts }: { parts: PartRecord[] }) {
                 return (
                   <TableRow key={part.id}>
                     <TableCell>{categoryLabels[part.category] || part.category}</TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-[280px]">
                       <div className="font-medium text-gray-950">{part.model}</div>
-                      <div className="text-sm text-gray-600">{[part.part_code, part.variant, part.capacity].filter(Boolean).join(" | ") || "-"}</div>
+                      <div className="mt-1 max-w-xl whitespace-normal text-sm text-gray-600">{buildProductInfo(part)}</div>
                     </TableCell>
                     <TableCell>
                       <QualityBadge quality={quality} />
@@ -117,4 +117,23 @@ function QualityBadge({ quality }: { quality: "Zin" | "Lô" | "Copy" }) {
 function formatPrice(value: number | null) {
   if (!value) return "-";
   return new Intl.NumberFormat("vi-VN").format(value) + "đ";
+}
+
+function buildProductInfo(part: PartRecord) {
+  return (
+    [
+      part.brand || part.source_sheet,
+      part.part_code ? `Mã: ${part.part_code}` : null,
+      part.variant,
+      part.color,
+      part.capacity,
+      part.resolution,
+      part.paper_box_price_vnd ? `Hộp giấy: ${formatPrice(part.paper_box_price_vnd)}` : null,
+      part.iron_box_price_vnd ? `Hộp sắt: ${formatPrice(part.iron_box_price_vnd)}` : null,
+      part.price_rmb ? `RMB: ${part.price_rmb}` : null,
+      part.warranty_info || part.note,
+    ]
+      .filter(Boolean)
+      .join(" | ") || "-"
+  );
 }

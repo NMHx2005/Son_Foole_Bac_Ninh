@@ -9,6 +9,7 @@ export type PublicSearchFilters = {
 };
 
 const publicParts = partsData as PartRecord[];
+const categoryOrder: PartCategory[] = ["screen", "battery", "cell", "warranty", "other"];
 
 export function searchPublicParts({ query = "", category = "all", limit = 80 }: PublicSearchFilters) {
   const normalized = normalizeText(query);
@@ -29,4 +30,21 @@ export function searchPublicParts({ query = "", category = "all", limit = 80 }: 
       return b.updated_at.localeCompare(a.updated_at) || a.model.localeCompare(b.model);
     })
     .slice(0, limit);
+}
+
+export function getPublicCategoryCounts() {
+  const counts = publicParts.reduce<Record<string, number>>(
+    (acc, part) => {
+      acc.all += 1;
+      acc[part.category] = (acc[part.category] || 0) + 1;
+      return acc;
+    },
+    { all: 0 },
+  );
+
+  categoryOrder.forEach((category) => {
+    counts[category] = counts[category] || 0;
+  });
+
+  return counts;
 }

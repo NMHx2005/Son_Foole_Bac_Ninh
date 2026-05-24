@@ -6,16 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PartRecord } from "@/lib/db";
+import { cn } from "@/lib/utils";
 
-const categories = [
+type CategoryId = "all" | "screen" | "battery" | "cell" | "warranty";
+
+const categories: Array<{ id: CategoryId; label: string; icon: typeof Search }> = [
   { id: "all", label: "Tất cả", icon: Search },
   { id: "screen", label: "Màn hình", icon: MonitorSmartphone },
   { id: "battery", label: "Pin", icon: Battery },
   { id: "cell", label: "Cell pin", icon: Smartphone },
   { id: "warranty", label: "Bảo hành", icon: ShieldCheck },
 ];
+
+const quickSearches = ["iPhone 15", "Samsung S24", "iPhone 14", "OPPO Reno", "Redmi Note"];
 
 const categoryLabels: Record<string, string> = {
   screen: "Màn hình",
@@ -25,11 +29,31 @@ const categoryLabels: Record<string, string> = {
   other: "Khác",
 };
 
-const quickSearches = ["iPhone 15", "Samsung S24", "iPhone 14", "OPPO Reno", "Redmi Note"];
+const categoryBadges: Record<string, "blue" | "green" | "orange" | "outline" | "secondary"> = {
+  screen: "blue",
+  battery: "green",
+  cell: "orange",
+  warranty: "outline",
+  other: "secondary",
+};
 
-export function PriceSearch({ initialResults }: { initialResults: PartRecord[] }) {
+const categoryIcons: Record<string, typeof Search> = {
+  screen: MonitorSmartphone,
+  battery: Battery,
+  cell: Smartphone,
+  warranty: ShieldCheck,
+  other: Search,
+};
+
+export function PriceSearch({
+  initialResults,
+  categoryCounts,
+}: {
+  initialResults: PartRecord[];
+  categoryCounts: Record<string, number>;
+}) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState<CategoryId>("all");
   const [results, setResults] = useState(initialResults);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -112,25 +136,34 @@ export function PriceSearch({ initialResults }: { initialResults: PartRecord[] }
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((item) => {
-                  const Icon = item.icon;
-                  const active = category === item.id;
+              <div className="-mx-5 overflow-x-auto px-5">
+                <div className="flex min-w-max gap-2 pb-1">
+                  {categories.map((item) => {
+                    const Icon = item.icon;
+                    const active = category === item.id;
 
-                  return (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant={active ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCategory(item.id)}
-                      className="h-10"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setCategory(item.id)}
+                        aria-pressed={active}
+                        className={cn(
+                          "inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+                          active
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:bg-blue-50",
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                        <span className={cn("rounded bg-gray-100 px-1.5 text-xs", active ? "bg-white/20 text-white" : "text-gray-600")}>
+                          {categoryCounts[item.id] ?? 0}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -147,41 +180,10 @@ export function PriceSearch({ initialResults }: { initialResults: PartRecord[] }
           </CardHeader>
           <CardContent className="p-0">
             {results.length ? (
-              <div className="overflow-x-auto">
-                <Table className="min-w-[640px] border-collapse">
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Loại linh kiện</TableHead>
-                      <TableHead>Chất lượng</TableHead>
-                      <TableHead>Đơn giá</TableHead>
-                      <TableHead className="hidden sm:table-cell">Ghi chú</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results.map((part) => {
-                      const quality = inferQuality(part);
-
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell>
-                            <div className="font-medium text-gray-950">{part.model}</div>
-                            <div className="mt-1 text-sm text-gray-600">
-                              {categoryLabels[part.category] || part.category}
-                              {part.brand ? ` | ${part.brand}` : ""}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <QualityBadge quality={quality} />
-                          </TableCell>
-                          <TableCell className="font-semibold text-gray-950">{formatPrice(part.price_vnd)}</TableCell>
-                          <TableCell className="hidden max-w-[360px] text-gray-600 sm:table-cell">
-                            {buildNote(part)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+              <div className="divide-y divide-gray-100">
+                {results.map((part) => (
+                  <ResultRow key={part.id} part={part} />
+                ))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center px-4 py-14 text-center">
@@ -216,14 +218,63 @@ function QualityBadge({ quality }: { quality: "Zin" | "Lô" | "Copy" }) {
   return <Badge variant={variant}>{quality}</Badge>;
 }
 
-function buildNote(part: PartRecord) {
+function CategoryBadge({ category }: { category: string }) {
+  return <Badge variant={categoryBadges[category] || "secondary"}>{categoryLabels[category] || category}</Badge>;
+}
+
+function ResultRow({ part }: { part: PartRecord }) {
+  const Icon = categoryIcons[part.category] || Search;
+  const quality = inferQuality(part);
+
+  return (
+    <div className="flex gap-3 px-3 py-3 sm:px-5 sm:py-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="wrap-break-word text-base font-medium leading-5 text-gray-950 sm:text-[17px]">{part.model}</div>
+            <div className="wrap-break-word mt-1 text-sm leading-5 text-gray-500">{buildProductInfo(part)}</div>
+          </div>
+          <div className="shrink-0 text-right">
+            <div className="text-base font-semibold leading-5 text-gray-950 sm:text-[17px]">{formatPrice(part.price_vnd)}</div>
+            {part.price_rmb ? <div className="mt-1 text-sm text-gray-500">RMB {part.price_rmb}</div> : null}
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <CategoryBadge category={part.category} />
+          <QualityBadge quality={quality} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function buildDetailLine(part: PartRecord) {
   return (
     [
+      part.brand || part.source_sheet,
       part.part_code ? `Mã: ${part.part_code}` : null,
       part.variant,
       part.color,
       part.capacity,
       part.resolution,
+    ]
+      .filter(Boolean)
+      .join(" | ") || "-"
+  );
+}
+
+function buildProductInfo(part: PartRecord) {
+  const detail = buildDetailLine(part);
+  const note = buildNote(part);
+  return [detail !== "-" ? detail : null, note !== "-" ? note : null].filter(Boolean).join(" • ") || "-";
+}
+
+function buildNote(part: PartRecord) {
+  return (
+    [
       part.paper_box_price_vnd ? `Hộp giấy: ${formatPrice(part.paper_box_price_vnd)}` : null,
       part.iron_box_price_vnd ? `Hộp sắt: ${formatPrice(part.iron_box_price_vnd)}` : null,
       part.price_rmb ? `RMB: ${part.price_rmb}` : null,

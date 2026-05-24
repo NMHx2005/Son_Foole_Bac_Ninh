@@ -2,13 +2,14 @@ import Link from "next/link";
 import { MonitorSmartphone, Settings } from "lucide-react";
 import { PriceSearch } from "@/components/PriceSearch";
 import { Button } from "@/components/ui/button";
-import { searchPublicParts } from "@/lib/publicSearch";
+import { getPublicCategoryCounts, searchPublicParts } from "@/lib/publicSearch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default function Home() {
   const initialResults = searchPublicParts({ limit: 60 });
+  const categoryCounts = getPublicCategoryCounts();
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -28,7 +29,7 @@ export default function Home() {
           </Link>
         </div>
       </header>
-      <PriceSearch initialResults={initialResults} />
+      <PriceSearch initialResults={initialResults} categoryCounts={categoryCounts} />
     </main>
   );
 }
